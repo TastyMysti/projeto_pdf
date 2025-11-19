@@ -176,5 +176,26 @@
     "format": "pdf",
     "size": 2748416,
     "cover": "books/covers/a-tempestade-de-ecos.webp"
+  },
+  {
+    "title": "Joe Abercrombie - A Primeira Lei [O Poder da Espada 1]",
+    "description": "Sand dan Glokta é um carrasco implacável a serviço da Inquisição de Sua Majestade. Nas mãos dele, os supostos traidores da Coroa admitem crimes, apontam comparsas e assinam confissões – sejam eles culpados ou não. Por ironia, Glokta é um ex-prisioneiro de guerra que passou dois anos sob tortura. Mas isso nunca teria acontecido se dependesse de Logen Nove Dedos. Ele jamais deixaria um inimigo viver tanto tempo. Só que isso foi antes. Agora ele está decidido a mudar. Não quer ser lembrado apenas por seus feitos cruéis e pelos muitos inimigos que se alegrarão com sua morte. Já a felicidade do jovem e mulherengo Jezal dan Luthar seria alcançar fama e glória vencendo o Campeonato de esgrima, para depois ser recompensado com um alto cargo no governo que lhe permitisse jamais ter um dia de trabalho pesado na vida. Mas há uma guerra iminente e ele pode ser convocado a qualquer momento. Luthar sabe que, nos campos do Norte gelado, o embate segue regras muito menos civilizadas que as do esporte. Enquanto a União mobiliza seus exércitos para combater os inimigos externos, internamente se formam conspirações sanguinárias e um homem se apresenta como o lendário Bayaz, o Primeiro dos Magos, retornando do exílio depois de séculos. Quem quer que ele seja, sua presença tornará as vidas de Glokta, Jezal e Logen muito mais difíceis. Agora a linha que separa o herói do vilão pode ficar tênue demais.",
+    "filename": "Joe Abercrombie - A Primeira Lei [O Poder da Espada 1].pdf",
+    "url": "books/pdf/Joe Abercrombie - A Primeira Lei [O Poder da Espada 1].pdf",
+    "format": "pdf",
+    "size": 2271708,
+    "cover": "books/covers/o-poder-da-espada.webp"
+  },
+  {
+    "title": "Joe Abercrombie - A Primeira Lei [Antes da Forca 2]",
+    "description": "Nesta ardilosa sequência de O poder da espada, o futuro da União está em três frentes de batalha – e nenhuma delas parece nem perto da vitória. Sand dan Glokta se tornou o todo-poderoso de Dagoska e tem de impedir que ela seja tomada pelos inimigos – tarefa difícil em uma cidade com muralhas decadentes e escassez de soldados. Além disso, o ex-torturador também precisa desvendar uma conspiração no conselho governante e salvar a própria pele. Enquanto isso, nas terras congeladas de Angland, o coronel West tem pela frente uma complicada missão: proteger o príncipe herdeiro no campo de batalha e evitar que a inexperiência e a arrogância dele levem todos para a morte. Ao mesmo tempo, Bayaz, o Primeiro dos Magos, lidera uma expedição que cruzará o continente até a borda do Mundo. Passando por terras amaldiçoadas e esquecidas no passado, ele precisa encontrar a Semente – uma relíquia do Tempo Antigo que poderia pôr um fim à guerra, ao exército de comedores que se multiplica no Sul e aos bandos de shankas que atacam no Norte. Nesta trama inteligente e de personagens complexos, antigos segredos são revelados, batalhas sangrentas são travadas, inimigos mortais são perdoados – mas não antes de estarem na forca.",
+    "filename": "Joe Abercrombie - A Primeira Lei [Antes da Forca 2].pdf",
+    "url": "books/pdf/Joe Abercrombie - A Primeira Lei [Antes da Forca 2].pdf",
+    "format": "pdf",
+    "size": 2367488,
+    "cover": "books/covers/antes-da-forca.webp",
+    "files": {
+      "pdf": "books/pdf/Joe Abercrombie - A Primeira Lei [Antes da Forca 2].pdf"
+    }
   }
 ]

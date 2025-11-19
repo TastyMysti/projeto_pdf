@@ -147,40 +147,32 @@ function render() {
       const href = resolveDownloadHref(item, state.format);
       const ext = (state.format === 'all' ? (href.toLowerCase().split('.').pop() || 'pdf') : (state.format || 'pdf')).toLowerCase();
       const name = buildDownloadName(item, ext, href);
-      
-      // Mostra o tamanho exato no toast de download
       const exactMB = calculateExactMB(item.size);
       showToast(`📥 Iniciando download: ${item.title} (${exactMB} MB)`);
-      
-      try {
-        const res = await fetch(href, { mode: 'cors' });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const blob = await res.blob();
-        const mime = ext === 'epub' ? 'application/epub+zip' : (ext === 'mobi' ? 'application/x-mobipocket-ebook' : 'application/pdf');
-        const typed = blob.type ? blob : new Blob([blob], { type: mime });
-        const url = URL.createObjectURL(typed);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = name;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        setTimeout(() => URL.revokeObjectURL(url), 1000);
-        showToast(`✅ Download iniciado: ${item.title} (${exactMB} MB)`);
-      } catch (err) {
-        const a = document.createElement('a');
-        a.href = href;
-        a.download = name;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        showToast(`⚠️ Tentando baixar diretamente: ${item.title} (${exactMB} MB)`);
+      const candidates = [href, href.replace(/\s+\.(pdf|epub|mobi)$/i, '.$1')];
+      for (const u of candidates) {
+        try {
+          const res = await fetch(encodeURI(u), { mode: 'cors' });
+          if (!res.ok) continue;
+          const blob = await res.blob();
+          const mime = ext === 'epub' ? 'application/epub+zip' : (ext === 'mobi' ? 'application/x-mobipocket-ebook' : 'application/pdf');
+          const typed = blob.type ? blob : new Blob([blob], { type: mime });
+          const url = URL.createObjectURL(typed);
+          const a = document.createElement('a'); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+          setTimeout(() => URL.revokeObjectURL(url), 1000);
+          showToast(`✅ Download iniciado: ${item.title} (${exactMB} MB)`);
+          return;
+        } catch {}
       }
+      const a = document.createElement('a'); a.href = encodeURI(href); a.download = name; document.body.appendChild(a); a.click(); a.remove();
+      showToast(`⚠️ Tentando baixar diretamente: ${item.title} (${exactMB} MB)`);
     };
 
     const previewBtn = li.querySelector('.preview-btn');
     previewBtn.onclick = () => {
-      window.open(item.url, '_blank');
+      const href = String(item.url || '');
+      const target = href || '';
+      window.open(encodeURI(target), '_blank');
       const exactMB = calculateExactMB(item.size);
       showToast(`👁️ Abrindo: ${item.title} (${exactMB} MB)`);
     };
