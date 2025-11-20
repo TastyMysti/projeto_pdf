@@ -1,4 +1,4 @@
-const state = { items: [], filtered: [], renderIndex: 0, chunkSize: 20, format: 'all' };
+const state = { items: [], filtered: [], renderIndex: 0, chunkSize: 20, format: 'all', filters: { author: '', categories: [], minSizeMB: 0, maxSizeMB: 500, yearFrom: 1900, yearTo: 2025, ratingMin: 0 } };
 const GRID_MAP = { compact: '280px', standard: '380px', comfortable: '500px' };
 
 const els = {
@@ -17,7 +17,17 @@ const els = {
   descModal: document.getElementById('desc-modal'),
   descModalClose: document.getElementById('desc-modal-close'),
   descModalBody: document.getElementById('desc-modal-body'),
-  descModalTitle: document.getElementById('desc-modal-title')
+  descModalTitle: document.getElementById('desc-modal-title'),
+  filtersToggle: document.getElementById('filters-toggle'),
+  filtersGrid: document.getElementById('filters-grid'),
+  authorInput: document.getElementById('author-input'),
+  sizeMin: document.getElementById('size-min'),
+  sizeMax: document.getElementById('size-max'),
+  sizeMinLabel: document.getElementById('size-min-label'),
+  sizeMaxLabel: document.getElementById('size-max-label'),
+  yearFromInput: document.getElementById('year-from'),
+  yearToInput: document.getElementById('year-to'),
+  ratingMin: document.getElementById('rating-min')
 };
 
 function __normalizeSagaKey(s) {
@@ -374,6 +384,38 @@ function applyFilter(query) {
   if (state.format !== 'all') {
     base = base.filter(i => hasFormat(i, state.format));
   }
+  const f = state.filters;
+  if (f.author && f.author.trim()) {
+    const a = f.author.trim().toLowerCase();
+    base = base.filter(i => getAuthor(i).toLowerCase().includes(a));
+  }
+  if (Array.isArray(f.categories) && f.categories.length) {
+    base = base.filter(i => {
+      const cats = getCategories(i);
+      for (const c of f.categories) { if (cats.includes(c)) return true; }
+      return false;
+    });
+  }
+  if (typeof f.minSizeMB === 'number' || typeof f.maxSizeMB === 'number') {
+    const minB = (f.minSizeMB || 0) * 1000000;
+    const maxB = (typeof f.maxSizeMB === 'number' ? f.maxSizeMB : 500) * 1000000;
+    base = base.filter(i => {
+      const s = i.size || 0;
+      return s >= minB && s <= maxB;
+    });
+  }
+  if (typeof f.yearFrom === 'number' || typeof f.yearTo === 'number') {
+    const y1 = f.yearFrom || 0;
+    const y2 = f.yearTo || 3000;
+    base = base.filter(i => {
+      const y = getYear(i);
+      if (!y) return true;
+      return y >= y1 && y <= y2;
+    });
+  }
+  if (typeof f.ratingMin === 'number' && f.ratingMin > 0) {
+    base = base.filter(i => (i.rating || 0) >= f.ratingMin);
+  }
   const groups = new Map();
   const order = [];
   for (const item of base) {
@@ -568,6 +610,116 @@ function buildDownloadName(item, ext, href) {
     .replace(/^-+|-+$/g, '');
   return `${cleaned}.${ext}`;
 }
+
+function getAuthor(item) {
+  const t = String(item.title || '').trim();
+  const i = t.indexOf(' - ');
+  if (i > 0) return t.slice(0, i).trim();
+  return '';
+}
+
+function getYear(item) {
+  if (item.year && typeof item.year === 'number') return item.year;
+  const src = `${item.title || ''} ${item.filename || ''} ${item.description || ''}`;
+  const m = src.match(/(19|20)\d{2}/);
+  return m ? Number(m[0]) : null;
+}
+
+function getCategories(item) {
+  if (Array.isArray(item.categories)) return item.categories.map(x => String(x).toLowerCase());
+  const t = String(item.title || '').toLowerCase();
+  const d = String(item.description || '').toLowerCase();
+  const out = [];
+  if (/(manual|guia|curso|roteiro|técnico)/.test(t) || /(manual|guia|curso|roteiro|técnico)/.test(d)) out.push('técnico');
+  if (/(ficção|romance|fantasia|mistério|thriller|suspense)/.test(t) || /(ficção|romance|fantasia|mistério|thriller|suspense)/.test(d)) out.push('ficção');
+  if (/(hábito|auto ajuda|auto-ajuda|produtividade|motivação)/.test(t) || /(hábito|auto ajuda|auto-ajuda|produtividade|motivação)/.test(d)) out.push('auto-ajuda');
+  return Array.from(new Set(out));
+}
+
+if (els.filtersToggle && els.filtersGrid) {
+  els.filtersToggle.addEventListener('click', () => {
+    const backdrop = els.modalBackdrop;
+    const modal = els.descModal;
+    const closeBtn = els.descModalClose;
+    const body = els.descModalBody;
+    const container = document.querySelector('.filters-panel');
+    let placeholder = document.getElementById('__filters_placeholder');
+    if (!placeholder) {
+      placeholder = document.createElement('div');
+      placeholder.id = '__filters_placeholder';
+      container.appendChild(placeholder);
+    }
+    if (els.descModalTitle) els.descModalTitle.textContent = 'Filtros Avançados';
+    body.innerHTML = '';
+    body.appendChild(els.filtersGrid);
+    els.filtersGrid.hidden = false;
+    backdrop.hidden = false;
+    modal.hidden = false;
+    modal.classList.add('modal--filters');
+    closeBtn.focus();
+    const onEsc = (e) => { if (e.key === 'Escape') { close(); } };
+    document.addEventListener('keydown', onEsc, { once: true });
+    backdrop.onclick = close;
+    closeBtn.onclick = close;
+    function close() {
+      placeholder.replaceWith(els.filtersGrid);
+      els.filtersGrid.hidden = true;
+      modal.hidden = true;
+      backdrop.hidden = true;
+      modal.classList.remove('modal--filters');
+      els.filtersToggle.setAttribute('aria-expanded', 'false');
+      els.filtersToggle.focus();
+    }
+    els.filtersToggle.setAttribute('aria-expanded', 'true');
+  });
+}
+
+if (els.authorInput) {
+  els.authorInput.addEventListener('input', debounce((e) => {
+    state.filters.author = String(e.target.value || '').trim();
+    applyFilter(els.search.value || '');
+  }, 300));
+}
+
+if (els.sizeMin && els.sizeMax) {
+  const syncLabels = () => {
+    els.sizeMinLabel.textContent = `${els.sizeMin.value} MB`;
+    els.sizeMaxLabel.textContent = `${els.sizeMax.value} MB`;
+  };
+  syncLabels();
+  els.sizeMin.addEventListener('input', () => { state.filters.minSizeMB = Number(els.sizeMin.value)||0; syncLabels(); applyFilter(els.search.value || ''); });
+  els.sizeMax.addEventListener('input', () => { state.filters.maxSizeMB = Number(els.sizeMax.value)||500; syncLabels(); applyFilter(els.search.value || ''); });
+}
+
+if (els.yearFromInput && els.yearToInput) {
+  const apply = () => {
+    state.filters.yearFrom = Number(els.yearFromInput.value)||1900;
+    state.filters.yearTo = Number(els.yearToInput.value)||2025;
+    applyFilter(els.search.value || '');
+  };
+  els.yearFromInput.addEventListener('change', apply);
+  els.yearToInput.addEventListener('change', apply);
+}
+
+if (els.ratingMin) {
+  els.ratingMin.addEventListener('change', (e) => {
+    state.filters.ratingMin = Number(e.target.value)||0;
+    applyFilter(els.search.value || '');
+  });
+}
+
+(() => {
+  const checks = document.querySelectorAll('.category-check');
+  if (checks && checks.length) {
+    checks.forEach((c) => {
+      c.addEventListener('change', () => {
+        const selected = Array.from(document.querySelectorAll('.category-check:checked')).map(x => x.value);
+        state.filters.categories = selected.map(x => String(x).toLowerCase());
+        applyFilter(els.search.value || '');
+      });
+    });
+  }
+})();
 /**
  * Biblioteca Digital Script
  * Versão: 1.0.0

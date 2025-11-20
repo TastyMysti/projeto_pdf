@@ -56,6 +56,50 @@
     </header>
 
     <main class="container">
+        <div class="filters-panel">
+            <button id="filters-toggle" class="filters-toggle" aria-expanded="false" aria-controls="filters-grid">⚙️ Filtros Avançados</button>
+            <div id="filters-grid" class="filters-grid" hidden>
+                <fieldset class="filter-section">
+                    <legend>Autor</legend>
+                    <input type="text" id="author-input" placeholder="Ex.: James Dashner">
+                </fieldset>
+                <fieldset class="filter-section">
+                    <legend>Categoria</legend>
+                    <label><input type="checkbox" class="category-check" value="ficção"> Ficção</label>
+                    <label><input type="checkbox" class="category-check" value="técnico"> Técnico</label>
+                    <label><input type="checkbox" class="category-check" value="auto-ajuda"> Auto-ajuda</label>
+                </fieldset>
+                <fieldset class="filter-section">
+                    <legend>Tamanho do Arquivo</legend>
+                    <div class="range-row">
+                        <input type="range" id="size-min" min="0" max="500" value="0">
+                        <span id="size-min-label">0 MB</span>
+                    </div>
+                    <div class="range-row">
+                        <input type="range" id="size-max" min="0" max="500" value="500">
+                        <span id="size-max-label">500 MB</span>
+                    </div>
+                </fieldset>
+                <fieldset class="filter-section">
+                    <legend>Ano de Publicação</legend>
+                    <div class="year-row">
+                        <input type="number" id="year-from" placeholder="De" value="1900">
+                        <input type="number" id="year-to" placeholder="Até" value="2025">
+                    </div>
+                </fieldset>
+                <fieldset class="filter-section">
+                    <legend>Mínimo Rating</legend>
+                    <select id="rating-min">
+                        <option value="0">Qualquer</option>
+                        <option value="1">⭐ 1+</option>
+                        <option value="2">⭐⭐ 2+</option>
+                        <option value="3" selected>⭐⭐⭐ 3+</option>
+                        <option value="4">⭐⭐⭐⭐ 4+</option>
+                        <option value="5">⭐⭐⭐⭐⭐ 5</option>
+                    </select>
+                </fieldset>
+            </div>
+        </div>
         <div class="stats">
             <div class="stat-item">
                 <span class="stat-number" id="total-count">0</span>
