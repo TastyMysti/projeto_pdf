@@ -16,8 +16,54 @@ const els = {
   modalBackdrop: document.getElementById('modal-backdrop'),
   descModal: document.getElementById('desc-modal'),
   descModalClose: document.getElementById('desc-modal-close'),
-  descModalBody: document.getElementById('desc-modal-body')
+  descModalBody: document.getElementById('desc-modal-body'),
+  descModalTitle: document.getElementById('desc-modal-title')
 };
+
+function __normalizeSagaKey(s) {
+  return String(s || '').toLowerCase().replace(/\s+/g, ' ').trim();
+}
+
+function __romanToInt(r) {
+  const map = { I:1, V:5, X:10, L:50, C:100, D:500, M:1000 };
+  const s = String(r || '').toUpperCase().replace(/[^IVXLCDM]/g, '');
+  if (!s) return NaN;
+  let total = 0, prev = 0;
+  for (let i = s.length - 1; i >= 0; i--) {
+    const val = map[s[i]] || 0;
+    if (val < prev) total -= val; else { total += val; prev = val; }
+  }
+  return total || NaN;
+}
+
+function extractSaga(item) {
+  const t = String(item.title || '');
+  const bi = t.indexOf('[');
+  const pi = t.indexOf('(');
+  let m = t.match(/\[([^\]]+?)\s*(?:#|)?\s*([IVXLCDM]+|\d+)\]/i);
+  if (m) {
+    const numRaw = m[2];
+    const idx = /^\d+$/.test(numRaw) ? Number(numRaw) : __romanToInt(numRaw);
+    const base = bi > -1 ? t.slice(0, bi).trim() : '';
+    const name = (base || m[1]).trim();
+    return { key: __normalizeSagaKey(name), name, index: isNaN(idx) ? null : idx };
+  }
+  m = t.match(/\((?:Vol\.?|Volume|Livro|Tomo|Parte)\s*\.?\s*([IVXLCDM]+|\d+)\)/i);
+  if (m) {
+    const numRaw = m[1];
+    const idx = /^\d+$/.test(numRaw) ? Number(numRaw) : __romanToInt(numRaw);
+    const base = pi > -1 ? t.slice(0, pi).trim() : t;
+    const name = base.trim();
+    return { key: __normalizeSagaKey(name), name, index: isNaN(idx) ? null : idx };
+  }
+  m = t.match(/\[([^\]]+?)\]/);
+  if (m) {
+    const base = bi > -1 ? t.slice(0, bi).trim() : '';
+    const name = (base || m[1]).trim();
+    return { key: __normalizeSagaKey(name), name, index: null };
+  }
+  return null;
+}
 
 function formatSize(bytes) {
   if (!bytes) return 'Tamanho desconhecido';
@@ -115,6 +161,7 @@ function render() {
     // Adicionando o tamanho exato em MB como data attribute
     const exactMB = calculateExactMB(item.size);
     
+    const isSaga = Array.isArray(item.__seriesGroup) && item.__seriesGroup.length > 1;
     li.innerHTML = `
                     <div class="card-cover">
                         <img src="${coverSrc}" alt="Capa de ${escapeHtml(item.title)}" 
@@ -138,6 +185,7 @@ function render() {
                                 <span>👁️</span>
                                 <span>Visualizar</span>
                             </button>
+                            ${isSaga ? `<button class="btn btn-secondary saga-btn"><span>📚</span><span>Saga</span></button>` : ''}
                         </div>
                     </div>
                 `;
@@ -185,6 +233,7 @@ function render() {
       const body = els.descModalBody;
       const open = () => {
         body.textContent = item.description || '';
+        if (els.descModalTitle) els.descModalTitle.textContent = 'Descrição completa';
         backdrop.hidden = false;
         modal.hidden = false;
         closeBtn.focus();
@@ -199,6 +248,91 @@ function render() {
         }
       };
       readMore.onclick = open;
+    }
+
+    const sagaBtn = li.querySelector('.saga-btn');
+    if (sagaBtn) {
+      const backdrop = els.modalBackdrop;
+      const modal = els.descModal;
+      const closeBtn = els.descModalClose;
+      const body = els.descModalBody;
+      const openSaga = () => {
+        const group = Array.isArray(item.__seriesGroup) ? item.__seriesGroup : [];
+        const name = String(item.__seriesName || 'Saga');
+        const rows = group.map((bi, idx) => {
+          const cover = bi.cover || generateCover(bi.title);
+          const fmt = getFormat(bi).toUpperCase();
+          const sizeStr = formatSize(bi.size);
+          return `
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+              <img src="${cover}" alt="" style="width:64px;height:48px;object-fit:cover;border-radius:8px;" onerror="this.src='${generateCover(bi.title)}'">
+              <div style="flex:1;min-width:0;">
+                <div style="font-weight:600;">${escapeHtml(bi.title)}</div>
+                <div style="font-size:12px;opacity:.8;">${fmt} • ${sizeStr}</div>
+                <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+                  <button class="btn btn-secondary series-preview" data-index="${idx}">Visualizar</button>
+                  <button class="btn btn-primary series-download" data-index="${idx}">Baixar</button>
+                </div>
+              </div>
+            </div>`;
+        }).join('');
+        body.innerHTML = rows || '<div>Nenhum livro encontrado nesta saga.</div>';
+        if (els.descModalTitle) els.descModalTitle.textContent = `Saga: ${name}`;
+        backdrop.hidden = false;
+        modal.hidden = false;
+        closeBtn.focus();
+        const onEsc = (e) => { if (e.key === 'Escape') { close(); } };
+        document.addEventListener('keydown', onEsc, { once: true });
+        backdrop.onclick = close;
+        closeBtn.onclick = close;
+        function close() {
+          modal.hidden = true;
+          backdrop.hidden = true;
+          sagaBtn.focus();
+        }
+        const previews = body.querySelectorAll('.series-preview');
+        previews.forEach(btn => {
+          btn.addEventListener('click', () => {
+            const i = Number(btn.getAttribute('data-index'));
+            const bi = group[i];
+            const href = String(bi.url || '');
+            const target = href || '';
+            window.open(encodeURI(target), '_blank');
+            const exactMB = calculateExactMB(bi.size);
+            showToast(`👁️ Abrindo: ${bi.title} (${exactMB} MB)`);
+          });
+        });
+        const downs = body.querySelectorAll('.series-download');
+        downs.forEach(btn => {
+          btn.addEventListener('click', async () => {
+            const i = Number(btn.getAttribute('data-index'));
+            const bi = group[i];
+            const href = resolveDownloadHref(bi, state.format);
+            const ext = (state.format === 'all' ? (href.toLowerCase().split('.').pop() || 'pdf') : (state.format || 'pdf')).toLowerCase();
+            const name = buildDownloadName(bi, ext, href);
+            const exactMB = calculateExactMB(bi.size);
+            showToast(`📥 Iniciando download: ${bi.title} (${exactMB} MB)`);
+            const candidates = [href, href.replace(/\s+\.(pdf|epub|mobi)$/i, '.$1')];
+            for (const u of candidates) {
+              try {
+                const res = await fetch(encodeURI(u), { mode: 'cors' });
+                if (!res.ok) continue;
+                const blob = await res.blob();
+                const mime = ext === 'epub' ? 'application/epub+zip' : (ext === 'mobi' ? 'application/x-mobipocket-ebook' : 'application/pdf');
+                const typed = blob.type ? blob : new Blob([blob], { type: mime });
+                const url = URL.createObjectURL(typed);
+                const a = document.createElement('a'); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
+                showToast(`✅ Download iniciado: ${bi.title} (${exactMB} MB)`);
+                return;
+              } catch {}
+            }
+            const a = document.createElement('a'); a.href = encodeURI(href); a.download = name; document.body.appendChild(a); a.click(); a.remove();
+            showToast(`⚠️ Tentando baixar diretamente: ${bi.title} (${exactMB} MB)`);
+          });
+        });
+      };
+      sagaBtn.onclick = openSaga;
     }
 
     list.appendChild(li);
@@ -240,7 +374,48 @@ function applyFilter(query) {
   if (state.format !== 'all') {
     base = base.filter(i => hasFormat(i, state.format));
   }
-  state.filtered = base;
+  const groups = new Map();
+  const order = [];
+  for (const item of base) {
+    const info = extractSaga(item);
+    if (info) {
+      const k = info.key;
+      let g = groups.get(k);
+      if (!g) {
+        g = { name: info.name, items: [] };
+        groups.set(k, g);
+        order.push({ type: 'group', key: k });
+      }
+      const idx = (info.index == null ? 9999 : info.index);
+      g.items.push({ item, index: idx });
+    } else {
+      order.push({ type: 'single', item });
+    }
+  }
+  const collapsed = [];
+  const sagaIndex = state.__sagaIndex || new Map();
+  for (const entry of order) {
+    if (entry.type === 'single') {
+      collapsed.push(entry.item);
+    } else {
+      const k = entry.key;
+      const full = sagaIndex.get(k);
+      if (full && full.items && full.items.length) {
+        const first = full.items[0];
+        first.__seriesGroup = full.items.slice();
+        first.__seriesName = full.name;
+        collapsed.push(first);
+      } else {
+        const g = groups.get(k);
+        g.items.sort((a,b)=>a.index-b.index);
+        const first = g.items[0].item;
+        first.__seriesGroup = g.items.map(x=>x.item);
+        first.__seriesName = g.name;
+        collapsed.push(first);
+      }
+    }
+  }
+  state.filtered = collapsed;
   state.renderIndex = 0;
   render();
 }
@@ -250,9 +425,22 @@ fetch('books/books.json')
   .then(res => res.json())
   .then(data => {
     state.items = Array.isArray(data) ? data : [];
-    state.filtered = state.items.slice();
+    const idx = new Map();
+    for (const it of state.items) {
+      const info = extractSaga(it);
+      if (!info) continue;
+      const k = info.key;
+      let g = idx.get(k);
+      if (!g) { g = { name: info.name, items: [] }; idx.set(k, g); }
+      g.items.push({ item: it, index: (info.index == null ? 9999 : info.index) });
+    }
+    for (const [k, g] of idx) {
+      g.items.sort((a,b)=>a.index-b.index);
+      g.items = g.items.map(x=>x.item);
+    }
+    state.__sagaIndex = idx;
     state.renderIndex = 0;
-    render();
+    applyFilter(els.search.value || '');
     
     // Calcular tamanho total para o toast
     const totalBytes = state.items.reduce((sum, item) => sum + (item.size || 0), 0);
