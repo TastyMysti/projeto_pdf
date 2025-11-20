@@ -1,4 +1,4 @@
-const state = { items: [], filtered: [], renderIndex: 0, chunkSize: 20, format: 'all', view: 'grid', filters: { author: '', categories: [], minSizeMB: 0, maxSizeMB: 500, yearFrom: 1900, yearTo: 2025, ratingMin: 0 } };
+const state = { items: [], filtered: [], renderIndex: 0, chunkSize: 20, format: 'all', view: 'grid', sort: 'relevance', filters: { author: '', categories: [], minSizeMB: 0, maxSizeMB: 500, yearFrom: 1900, yearTo: 2025, ratingMin: 0 } };
 const GRID_MAP = { compact: '280px', standard: '380px', comfortable: '500px' };
 
 const els = {
@@ -9,6 +9,7 @@ const els = {
   totalSize: document.getElementById('total-size'),
   search: document.getElementById('search'),
   typeFilter: document.getElementById('type-filter'),
+  sortBy: document.getElementById('sort-by'),
   pageSize: document.getElementById('page-size'),
   gridSize: document.getElementById('grid-size'),
   year: document.getElementById('year'),
@@ -175,12 +176,14 @@ function render() {
     const exactMB = calculateExactMB(item.size);
     
     const isSaga = Array.isArray(item.__seriesGroup) && item.__seriesGroup.length > 1;
+    const sagaCount = isSaga ? (item.__seriesGroup.length || 0) : 0;
     if (state.view === 'grid') {
       li.innerHTML = `
                     <div class="card-cover">
                         <img src="${coverSrc}" alt="Capa de ${escapeHtml(item.title)}" 
                              onerror="this.src='${generateCover(item.title)}'">
                         <div class="card-badge">${fileType}</div>
+                        ${isSaga ? `<div class="saga-badge">Saga (${sagaCount})</div>` : ''}
                     </div>
                     <div class="card-content">
                         <h3 class="card-title">${escapeHtml(item.title)}</h3>
@@ -211,7 +214,7 @@ function render() {
         </div>
         <div class="row-main">
           <div class="row-title">${escapeHtml(item.title)}</div>
-          <div class="row-sub">${escapeHtml(author)} • ${fileType} • ${formatSize(item.size)}</div>
+          <div class="row-sub">${escapeHtml(author)} • ${fileType} • ${formatSize(item.size)}${isSaga ? ` • Saga (${sagaCount})` : ''}</div>
         </div>
         <div class="row-actions">
           <button class="btn btn-primary download-btn"><span>⬇️</span><span>Baixar</span></button>
@@ -456,16 +459,36 @@ function applyFilter(query) {
         const first = full.items[0];
         first.__seriesGroup = full.items.slice();
         first.__seriesName = full.name;
+        first.__seriesCount = full.items.length;
+        first.__seriesTotalSize = full.items.reduce((s,it)=>s + (it.size||0), 0);
         collapsed.push(first);
       } else {
         const g = groups.get(k);
         g.items.sort((a,b)=>a.index-b.index);
         const first = g.items[0].item;
-        first.__seriesGroup = g.items.map(x=>x.item);
+        const groupItems = g.items.map(x=>x.item);
+        first.__seriesGroup = groupItems;
         first.__seriesName = g.name;
+        first.__seriesCount = groupItems.length;
+        first.__seriesTotalSize = groupItems.reduce((s,it)=>s + (it.size||0), 0);
         collapsed.push(first);
       }
     }
+  }
+  const sortKey = state.sort || 'relevance';
+  if (sortKey !== 'relevance') {
+    collapsed.sort((a, b) => {
+      if (sortKey === 'title-asc') return String(a.title||'').localeCompare(String(b.title||''));
+      if (sortKey === 'title-desc') return String(b.title||'').localeCompare(String(a.title||''));
+      if (sortKey === 'year-desc') {
+        const ya = getYear(a) || 0; const yb = getYear(b) || 0; return yb - ya;
+      }
+      if (sortKey === 'size-desc') {
+        const sa = (a.__seriesTotalSize || a.size || 0); const sb = (b.__seriesTotalSize || b.size || 0); return sb - sa;
+      }
+      if (sortKey === 'rating-desc') return (b.rating||0) - (a.rating||0);
+      return 0;
+    });
   }
   state.filtered = collapsed;
   state.renderIndex = 0;
@@ -473,6 +496,29 @@ function applyFilter(query) {
 }
 
 // Load data
+function renderSkeleton(count = 8) {
+  const list = els.list;
+  const empty = els.empty;
+  list.innerHTML = '';
+  empty.hidden = true;
+  list.classList.toggle('list-view', false);
+  for (let i = 0; i < count; i++) {
+    const li = document.createElement('li');
+    li.className = 'pdf-card skeleton-card';
+    li.innerHTML = `
+      <div class="card-cover skeleton"></div>
+      <div class="card-content">
+        <div class="line skeleton" style="height:22px;width:70%;margin-bottom:12px;"></div>
+        <div class="line skeleton" style="height:14px;width:100%;margin-bottom:8px;"></div>
+        <div class="line skeleton" style="height:14px;width:90%;margin-bottom:16px;"></div>
+        <div class="line skeleton" style="height:14px;width:50%;"></div>
+      </div>`;
+    list.appendChild(li);
+  }
+}
+
+renderSkeleton(8);
+
 fetch('books/books.json')
   .then(res => res.json())
   .then(data => {
@@ -513,6 +559,13 @@ els.search.addEventListener('input', debounce((e) => applyFilter(e.target.value)
 if (els.typeFilter) {
   els.typeFilter.addEventListener('change', (e) => {
     state.format = e.target.value;
+    applyFilter(els.search.value || '');
+  });
+}
+
+if (els.sortBy) {
+  els.sortBy.addEventListener('change', (e) => {
+    state.sort = e.target.value || 'relevance';
     applyFilter(els.search.value || '');
   });
 }
