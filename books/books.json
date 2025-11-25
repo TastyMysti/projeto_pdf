@@ -588,5 +588,15 @@
     "size": 1970390,
     "cover": "books/covers/principe-mecanico.webp",
     "isbn": "9788501092694"
+  },
+  {
+    "title": "Cassandra Clare - As Peças Infernais [Princesa Mecânica 3]",
+    "description": "Continuação de Príncipe mecânico, “Princesa Mecânica” é ambientado no universo dos Caçadores de sombras, também explorado na série Os Instrumentos mortais, que chega agora ao cinema. Neste volume, o mistério sobre Tessa Gray e o Magistrado continua. Mas enquanto luta para descobrir mais sobre o próprio passado, a moça se envolve cada vez mais num triângulo amoroso que pode trazer consequências nefastas para ela, seu noivo, seu verdadeiro amor e os habitantes do Submundo.",
+    "filename": "Cassandra Clare - As Peças Infernais [Princesa Mecânica 3].pdf",
+    "url": "books/pdf/Cassandra Clare - As Peças Infernais [Princesa Mecânica 3].pdf",
+    "format": "pdf",
+    "size": 2062875,
+    "cover": "books/covers/princesa-mecanica.webp",
+    "isbn": "9788501092700"
   }
 ]
