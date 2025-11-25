@@ -568,5 +568,15 @@
     "size": 2314865,
     "cover": "books/covers/mergulham-nas-águas-do-mundo.webp",
     "isbn": "9788555341816"
+  },
+  {
+    "title": "Cassandra Clare - As Peças Infernais [Anjo Mecânico 1]",
+    "description": "Tessa Gray tem um anjinho mecânico pendurado no pescoço, um presente de família do qual nunca se separa. O tique-taque do pingente faz com que ela se sinta segura junto à lembrança dos pais, que já morreram. Mal sabe Tessa que esse barulhinho muito em breve vai se tornar o odioso som de um exército comandado por forças do Submundo. Com os Caçadores de Sombras e seu recém-descoberto poder sobrenatural, ela enfrentará uma guerra mortal entre os Nephilim e as máquinas do Magistrado, o novo comandante das trevas na Londres vitoriana.",
+    "filename": "Cassandra Clare - As Peças Infernais [Anjo Mecânico 1].pdf",
+    "url": "books/pdf/Cassandra Clare - As Peças Infernais [Anjo Mecânico 1].pdf",
+    "format": "pdf",
+    "size": 5546445,
+    "cover": "books/covers/anjo-mecânico.webp",
+    "isbn": "9788501092687"
   }
 ]
